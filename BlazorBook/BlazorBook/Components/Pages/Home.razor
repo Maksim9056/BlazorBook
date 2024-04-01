@@ -1,0 +1,88 @@
+﻿@page "/"
+@rendermode InteractiveAuto
+@using System.Net.Http.Json
+@inject IHttpClientFactory ClientFactory
+@using BlazorBook.Models
+@using Newtonsoft.Json
+@inject NavigationManager NavigationManager
+
+@if (Books == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="table">
+        <h2 class="center">All Books</h2>
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Author</th>
+                <th>Year of Publication</th>
+            </tr>
+            @foreach (var book in Books)
+            {
+                <tr>
+                    <td>@book.Id</td>
+                    <td><a href="@($"bookbuy/{book.Id}")">@book.Name</a></td>
+                    <td>@book.Author</td>
+                    <td>@book.Year_of_publication</td>
+                    <button class="btn btn-primary" @onclick="IncrementCount"> </button>
+                </tr>
+            }
+        </table>
+    </div>
+}
+
+
+@code {
+    string url = "https://localhost:7224/api/Books";
+
+    List<Book> Books;
+    HttpClient httpClient = null!;
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+
+            httpClient = ClientFactory.CreateClient();
+            httpClient.BaseAddress = new Uri(url);
+            await LoadData();
+            // API endpoint
+
+            // Send a GET request to the API
+            // var response = await HttpClient.GetAsync(url);
+
+            // Check if the response is successful
+            // if (response.IsSuccessStatusCode)
+            // {
+            //     // Read the response content as a string
+            //     string jsonString = await response.Content.ReadAsStringAsync();
+
+            //     // Deserialize the JSON string to a list of Book objects
+            //     Books = JsonConvert.DeserializeObject<List<Book>>(jsonString);
+            // }
+            // else
+            // {
+            //     // Handle unsuccessful response
+            //     Console.WriteLine("Failed to retrieve data from the API. Status code: " + response.StatusCode);
+            // }
+        }
+        catch (Exception ex)
+        {
+            // Handle exception
+            Console.WriteLine("An error occurred: " + ex.Message);
+        }
+    }
+    public void IncrementCount()
+    {
+        // NavigationManager.NavigateTo("/book/1"); // Перенаправление на /book/1 если нет идентификатора книги в URL
+
+    }
+    async Task LoadData()
+    {
+        Books = await httpClient.GetFromJsonAsync<List<Book>>(httpClient.BaseAddress) ?? Books;
+    }
+
+}

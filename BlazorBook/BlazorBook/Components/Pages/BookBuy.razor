@@ -1,0 +1,41 @@
+﻿@page "/bookbuy/{Id}"
+@rendermode InteractiveAuto
+@using System.Net.Http.Json
+@using BlazorBook.Models
+@using Newtonsoft.Json
+@inject IHttpClientFactory ClientFactory
+
+
+@code {
+
+    string url = "https://localhost:7224/api/Books/";
+    List<Book> Books;
+    HttpClient httpClient = null;
+    string Id;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            httpClient = ClientFactory.CreateClient();
+            await LoadData();
+
+        }
+        catch (Exception ex)
+        {
+            // Handle exception
+            Console.WriteLine("An error occurred: " + ex.Message);
+        }
+    }
+
+    async Task LoadData()
+    {
+        var response = await httpClient.GetFromJsonAsync<List<Book>>(url + Id);
+        if (response != null)
+        {
+            Books = response;
+        }
+    }
+
+
+}
