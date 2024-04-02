@@ -1,5 +1,5 @@
 ﻿@page "/"
-@rendermode InteractiveAuto
+@rendermode InteractiveServer
 @using System.Net.Http.Json
 @inject IHttpClientFactory ClientFactory
 @using BlazorBook.Models
@@ -12,62 +12,113 @@
 }
 else
 {
-    <div class="table">
-        <h2 class="center">All Books</h2>
-        <table>
-            <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Author</th>
-                <th>Year of Publication</th>
-            </tr>
-            @foreach (var book in Books)
-            {
+
+    @if (update == false)
+    {
+
+
+        <div class="table">
+            <h2 class="center">All Books</h2>
+            <table>
                 <tr>
-                    <td>@book.Id</td>
-                    <td><a href="@($"bookbuy/{book.Id}")">@book.Name</a></td>
-                    <td>@book.Author</td>
-                    <td>@book.Year_of_publication</td>
-                    <button class="btn btn-primary" @onclick="IncrementCount"> </button>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Author</th>
+                    <th>Year of Publication</th>
                 </tr>
-            }
-        </table>
+                @foreach (var book in Books)
+                {
+                    <tr>
+                        <td>@book.Id</td>
+                        <td><a href="@($"bookbuy/{book.Id}")">@book.Name</a></td>
+                        <td>@book.Author</td>
+                        <td>@book.Year_of_publication</td>
+                    </tr>
+                }
+            </table>
+        </div>
+    }
+    else
+    {
+        @if (Book == null)
+        {
+
+            <p><em>Book does't or error @IDS... </em></p>
+
+
+        }
+        else
+        {
+
+            <div class="border-2">
+                <p class="container">ID:@Book.Id</p>
+            </div>
+            <div class="border-2">
+                <p class="container">Name:@Book.Name</p>
+            </div>
+            <div class="border-2">
+                <p class="container">Author:@Book.Author</p>
+            </div>
+            <div class="border-2">
+                <p class="container">Year of Publication:@Book.Year_of_publication</p>
+            </div>
+        }
+    }
+
+
+    <div style="flex-basis: calc(100% - 2.5px); margin-bottom: 5px;">
+        <div>
+            <label for="author">Автор:</label>
+            <input type="text" @bind="Автор" id="author" name="author" style="width: calc(100% - 22px);"><br>
+        </div>
+        <div style="flex-basis: calc(100% - 2.5px); margin-bottom: 5px;">
+            <label for="name">Название:</label>
+            <input type="text" @bind="Название" name="name" style="width: calc(100% - 22px);"><br>
+        </div>
+        <div style="flex-basis: calc(100% - 2.5px); margin-bottom: 5px;">
+            <label for="date">Дата:</label>
+            <input type="text" @bind="Дата" id="date" name="date" style="width: calc(100% - 22px);"><br>
+        </div>
+        <div style="flex-basis: calc(100% - 2.5px); margin-bottom: 5px;">
+            <label for="id">ID:</label>
+            <input type="text" @bind="ID" id="id" name="id" style="width: calc(100% - 22px);"><br>
+        </div>
     </div>
+    <button type="submit" @onclick="Filter" style="background-color: #4CAF50; color: white; padding: 5px 7.5px; border: none; border-radius: 4px; cursor: pointer; width: 40%;">Применить</button>
+    <button type="submit" @onclick="LoadData" style="background-color: #f44336; color: white; padding: 5px 7.5px; border: none; border-radius: 4px; cursor: pointer; margin-top: 5px; width: 40%;">Показать все</button>
 }
 
 
 @code {
+
     string url = "https://localhost:7224/api/Books";
 
+    private string Название { get; set; }
+
+    private string Автор { get; set; }
+
+    private string Дата { get; set; }
+
+    private string ID { get; set; }
+    int IDS { get; set; }
+    Book Book;
+
+    bool update;
+
     List<Book> Books;
+
     HttpClient httpClient = null!;
+
     protected override async Task OnInitializedAsync()
     {
         try
         {
-
-            httpClient = ClientFactory.CreateClient();
-            httpClient.BaseAddress = new Uri(url);
-            await LoadData();
-            // API endpoint
-
-            // Send a GET request to the API
-            // var response = await HttpClient.GetAsync(url);
-
-            // Check if the response is successful
-            // if (response.IsSuccessStatusCode)
-            // {
-            //     // Read the response content as a string
-            //     string jsonString = await response.Content.ReadAsStringAsync();
-
-            //     // Deserialize the JSON string to a list of Book objects
-            //     Books = JsonConvert.DeserializeObject<List<Book>>(jsonString);
-            // }
-            // else
-            // {
-            //     // Handle unsuccessful response
-            //     Console.WriteLine("Failed to retrieve data from the API. Status code: " + response.StatusCode);
-            // }
+            if (Books == null)
+            {
+                httpClient = ClientFactory.CreateClient();
+                httpClient.BaseAddress = new Uri(url);
+                await LoadData();
+            }
         }
         catch (Exception ex)
         {
@@ -75,14 +126,52 @@ else
             Console.WriteLine("An error occurred: " + ex.Message);
         }
     }
-    public void IncrementCount()
-    {
-        // NavigationManager.NavigateTo("/book/1"); // Перенаправление на /book/1 если нет идентификатора книги в URL
-
-    }
     async Task LoadData()
     {
-        Books = await httpClient.GetFromJsonAsync<List<Book>>(httpClient.BaseAddress) ?? Books;
-    }
+        try
+        {
+            Books = await httpClient.GetFromJsonAsync<List<Book>>(httpClient.BaseAddress) ?? Books;
+            update = false;
+        }
+        catch
+        {
 
+        }
+    }
+    private async Task Filter()
+    {
+        try
+        {
+            update = true;
+
+            Book book = null;
+            if (ID == "")
+            {
+                book = new Book(0, Автор, Название, Дата);
+
+            }
+            else
+            {
+                book = new Book(Convert.ToInt32(ID), Автор, Название, Дата);
+
+            }
+            var str = JsonConvert.SerializeObject(book);
+
+            var st = url + "/" + ID + "," + Автор + "," + Название + "," + Дата;
+            var response = await httpClient.GetFromJsonAsync<Book>(st);
+            if (response != null)
+            {
+                Book = response;
+            }
+            else
+            {
+                IDS = 404;
+            }
+        }
+        catch (Exception ex)
+        {
+            IDS = 404;
+            Console.WriteLine(ex.Message);
+        }
+    }
 }
